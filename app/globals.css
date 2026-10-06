@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1b4f9c;
+  --color-primary-dark: #12376e;
+  --color-accent: #3b82f6;
+  --color-tint: #eaf2fd;
+  --color-ink: #1a1f2b;
+  --color-muted: #5b6472;
+  --color-line: #e3e8ef;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --font-heading: "Poppins", "Manrope", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: #1a1f2b;
+  font-family: var(--font-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: #1b4f9c;
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom flat cursor — desktop only, driven by transform */
+#epixx-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  background: #3b82f6;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+
+@media (hover: none), (pointer: coarse) {
+  #epixx-cursor {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
