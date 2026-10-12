@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, Button, Input, Textarea, Badge } from "@/components/ui/primitives";
 import { DataTable, PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPost, adminPatch, adminDel } from "@/lib/admin-client";
+import { adminPost, adminPatch, adminDel, revalidatePaths } from "@/lib/admin-client";
 import { courseSchema } from "@/lib/shared";
 
 interface SyllabusModule { module: string; topics: string; }
@@ -66,6 +66,7 @@ function CourseForm({ initial, onDone }: { initial?: Course; onDone: () => void 
     try {
       if (initial) await adminPatch(`/courses/${initial._id}`, parsed.data);
       else await adminPost("/courses", parsed.data);
+      await revalidatePaths(["/", "/courses", `/courses/${parsed.data.slug}`]);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -155,17 +156,20 @@ export default function CoursesPage() {
     void _id;
     const copy = typeof rest.trainer === "object" ? { ...rest, trainer: rest.trainer?._id } : rest;
     await adminPost("/courses", { ...copy, title: `${copy.title} (copy)`, slug: `${copy.slug}-copy`, status: "draft" });
+    await revalidatePaths(["/", "/courses"]);
     await reload();
   };
 
   const toggle = async (c: Course) => {
     await adminPatch(`/courses/${c._id}`, { status: c.status === "published" ? "draft" : "published" });
+    await revalidatePaths(["/", "/courses", `/courses/${c.slug}`]);
     await reload();
   };
 
   const remove = async (c: Course) => {
     if (!confirm(`Delete "${c.title}"?`)) return;
     await adminDel(`/courses/${c._id}`);
+    await revalidatePaths(["/", "/courses", `/courses/${c.slug}`]);
     await reload();
   };
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, Button, Input } from "@/components/ui/primitives";
 import { DataTable, PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPost, adminPatch, adminDel } from "@/lib/admin-client";
+import { adminPost, adminPatch, adminDel, revalidatePaths } from "@/lib/admin-client";
 
 interface Batch {
   _id: string;
@@ -19,7 +19,7 @@ const toInput = (iso?: string) => (iso ? new Date(iso).toISOString().slice(0, 16
 function BatchForm({ courses, trainers, onDone }: {
   courses: { _id: string; title: string }[];
   trainers: { _id: string; name: string }[];
-  onDone: () => void;
+  onDone: (courseId: string) => void;
 }) {
   const [form, setForm] = useState({
     course: courses[0]?._id ?? "", start: "", end: "", mode: "Online",
@@ -49,7 +49,7 @@ function BatchForm({ courses, trainers, onDone }: {
         seatsFilled: Number(form.seatsFilled) || 0,
         status: form.status,
       });
-      onDone();
+      onDone(form.course);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -95,23 +95,34 @@ function BatchForm({ courses, trainers, onDone }: {
 
 export default function BatchesPage() {
   const { data, loading, error, reload } = useAdminFetch<{ items: Batch[] }>(`/batches?limit=100&sort=startDate`);
-  const { data: courses } = useAdminFetch<{ items: { _id: string; title: string }[] }>(`/courses?limit=100&sort=order`);
+  const { data: courses } = useAdminFetch<{ items: { _id: string; title: string; slug: string }[] }>(`/courses?limit=100&sort=order`);
   const { data: trainers } = useAdminFetch<{ items: { _id: string; name: string }[] }>(`/trainers?limit=100`);
   const [creating, setCreating] = useState(false);
 
   const name = (v: Batch["course"]) => (typeof v === "object" ? v.title : v);
+  // Resolve the public detail URL for a batch's course (populated object or raw id).
+  const courseSlug = (v: Batch["course"]) => {
+    if (typeof v === "object") {
+      const hit = (courses?.items ?? []).find((c) => c._id === v._id);
+      return (hit?.slug ?? v._id) as string;
+    }
+    return (courses?.items ?? []).find((c) => c._id === v)?.slug ?? v;
+  };
   const trainerName = (v: Batch["trainer"]) => (!v ? "—" : typeof v === "object" ? v.name : v);
   const left = (b: Batch) => Math.max(0, b.totalSeats - b.seatsFilled);
 
   const fill = async (b: Batch, seatsFilled: number) => {
     const status = seatsFilled >= b.totalSeats ? "full" : seatsFilled / b.totalSeats >= 0.8 ? "filling-fast" : "upcoming";
     await adminPatch(`/batches/${b._id}`, { seatsFilled, status });
+    await revalidatePaths([`/courses/${courseSlug(b.course)}`]);
     await reload();
   };
 
   const remove = async (b: Batch) => {
     if (!confirm("Delete this batch?")) return;
+    const slug = courseSlug(b.course);
     await adminDel(`/batches/${b._id}`);
+    await revalidatePaths([`/courses/${slug}`]);
     await reload();
   };
 
@@ -123,7 +134,12 @@ export default function BatchesPage() {
           <BatchForm
             courses={courses?.items ?? []}
             trainers={trainers?.items ?? []}
-            onDone={() => { setCreating(false); void reload(); }}
+            onDone={async (courseId) => {
+              setCreating(false);
+              const slug = (courses?.items ?? []).find((c) => c._id === courseId)?.slug ?? courseId;
+              await revalidatePaths([`/courses/${slug}`]);
+              void reload();
+            }}
           />
         </Card>
       </div>

@@ -8,7 +8,7 @@ import { EnquiryForm } from "@/components/EnquiryForm";
 import { Hero3D } from "@/components/Hero3D";
 import { apiGet } from "@/lib/api";
 import type { Course, Paginated } from "@/lib/shared";
-
+  
 interface Settings {
   heroTitle?: string; heroSubtitle?: string; heroCta?: string;
   stats?: { label: string; value: number; suffix?: string }[];

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, Button, Input, Textarea } from "@/components/ui/primitives";
 import { DataTable, PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPost, adminPatch, adminDel } from "@/lib/admin-client";
+import { adminPost, adminPatch, adminDel, revalidatePaths } from "@/lib/admin-client";
 import { testimonialSchema } from "@/lib/shared";
 
 interface Testimonial {
@@ -33,6 +33,7 @@ function TestimonialForm({ courses, onDone }: {
     setSaving(true);
     try {
       await adminPost("/testimonials", parsed.data);
+      await revalidatePaths(["/", "/placements", "/testimonials"]);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -70,11 +71,13 @@ export default function TestimonialsPage() {
 
   const flip = async (t: Testimonial, key: "approved" | "featured") => {
     await adminPatch(`/testimonials/${t._id}`, { [key]: !t[key] });
+    await revalidatePaths(["/", "/placements", "/testimonials"]);
     await reload();
   };
   const remove = async (t: Testimonial) => {
     if (!confirm(`Delete review by "${t.studentName}"?`)) return;
     await adminDel(`/testimonials/${t._id}`);
+    await revalidatePaths(["/", "/placements", "/testimonials"]);
     await reload();
   };
 

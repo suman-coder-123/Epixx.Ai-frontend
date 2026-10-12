@@ -43,3 +43,19 @@ export function downloadCsv(filename: string, rows: Array<Record<string, unknown
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// Ask Next.js to drop cached public pages after an admin save.
+// Same-origin call — works on localhost and on hosting. Never throws;
+// a revalidation failure must not fail the save itself.
+export async function revalidatePaths(paths: string[]): Promise<void> {
+  try {
+    await fetch("/api/revalidate", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths }),
+    });
+  } catch {
+    // ignore — pages still refresh via the ISR window
+  }
+}

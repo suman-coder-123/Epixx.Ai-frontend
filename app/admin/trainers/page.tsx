@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, Button, Input, Textarea } from "@/components/ui/primitives";
 import { DataTable, PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPost, adminPatch, adminDel } from "@/lib/admin-client";
+import { adminPost, adminPatch, adminDel, revalidatePaths } from "@/lib/admin-client";
 
 interface Trainer {
   _id: string; name: string; slug: string; photo?: string; bio: string;
@@ -41,6 +41,7 @@ function TrainerForm({ initial, onDone }: { initial?: Trainer; onDone: () => voi
     try {
       if (initial) await adminPatch(`/trainers/${initial._id}`, payload);
       else await adminPost("/trainers", payload);
+      await revalidatePaths(["/trainers"]);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -76,6 +77,7 @@ export default function TrainersPage() {
   const remove = async (t: Trainer) => {
     if (!confirm(`Delete "${t.name}"?`)) return;
     await adminDel(`/trainers/${t._id}`);
+    await revalidatePaths(["/trainers"]);
     await reload();
   };
 

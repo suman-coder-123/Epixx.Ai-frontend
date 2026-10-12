@@ -53,14 +53,43 @@ export async function Header() {
   );
 }
 
-export function Footer() {
+interface FooterSettings {
+  brandName?: string;
+  contact?: { phone?: string; whatsapp?: string; email?: string };
+  branches?: { name: string; address: string }[];
+  socials?: { youtube?: string; instagram?: string; linkedin?: string; facebook?: string };
+}
+
+export async function Footer() {
+  // Footer reads live settings (contact, branches, socials) with static fallbacks,
+  // so Admin → Settings edits actually reach the public site.
+  const s = await apiGet<FooterSettings>("/settings").catch(() => null);
+  const brand = s?.brandName || SITE.shortName;
+  const phone = s?.contact?.phone || SITE.phone;
+  const email = s?.contact?.email || SITE.email;
+  const branches = s?.branches?.length ? s.branches : [{ name: "Main Center", address: SITE.address }];
+  const socials = Object.entries(s?.socials ?? {}).filter(([, v]) => v && v.trim()) as [string, string][];
+
   return (
     <footer className="bg-primary-dark text-white">
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-12 md:grid-cols-4 md:px-8">
         <div>
-          <p className="font-heading text-lg font-bold">{SITE.name}</p>
+          <p className="font-heading text-lg font-bold">{brand}</p>
           <p className="mt-2 text-sm text-white/80">{SITE.tagline}</p>
-          <p className="mt-3 text-sm text-white/80">{SITE.address}</p>
+          {branches.map((b) => (
+            <p key={b.name} className="mt-3 text-sm text-white/80">
+              <span className="font-semibold text-white">{b.name}:</span> {b.address}
+            </p>
+          ))}
+          {socials.length ? (
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              {socials.map(([k, v]) => (
+                <a key={k} href={v} target="_blank" rel="noreferrer" className="capitalize text-white/80 hover:text-white">
+                  {k}
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
         <nav aria-label="Courses">
           <p className="font-heading font-semibold">Courses</p>
@@ -82,8 +111,8 @@ export function Footer() {
         </nav>
         <div>
           <p className="font-heading font-semibold">Talk to a counselor</p>
-          <p className="mt-3 text-sm text-white/80">{SITE.phone}</p>
-          <p className="text-sm text-white/80">{SITE.email}</p>
+          <p className="mt-3 text-sm text-white/80">{phone}</p>
+          <p className="text-sm text-white/80">{email}</p>
           <Link href="/contact" className="mt-4 inline-block rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-primary">
             Enquire now
           </Link>
@@ -96,10 +125,12 @@ export function Footer() {
   );
 }
 
-export function WhatsAppFloat() {
+export async function WhatsAppFloat() {
+  const s = await apiGet<{ contact?: { whatsapp?: string } }>("/settings").catch(() => null);
+  const wa = s?.contact?.whatsapp || SITE.whatsapp;
   return (
     <a
-      href={`https://wa.me/${SITE.whatsapp}?text=${encodeURIComponent("Hi! I want details about courses.")}`}
+      href={`https://wa.me/${wa}?text=${encodeURIComponent("Hi! I want details about courses.")}`}
       target="_blank"
       rel="noreferrer"
       aria-label="Chat on WhatsApp"

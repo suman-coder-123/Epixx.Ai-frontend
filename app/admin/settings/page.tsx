@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, Button, Input, Textarea } from "@/components/ui/primitives";
 import { PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPut } from "@/lib/admin-client";
+import { adminPut, revalidatePaths } from "@/lib/admin-client";
 
 interface Settings {
   heroTitle?: string; heroSubtitle?: string; heroCta?: string;
@@ -43,6 +43,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await adminPut("/settings", form);
+      await revalidatePaths(["/", "/about", "/placements", "/contact", "/gallery"]);
       setMsg("Settings saved — the public site updates without a deploy.");
       await reload();
     } catch (e) {

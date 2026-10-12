@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, Button, Input, Textarea, Badge } from "@/components/ui/primitives";
 import { DataTable, PageHeader } from "@/components/admin/ui";
 import { useAdminFetch } from "@/lib/useAdmin";
-import { adminPost, adminPatch, adminDel } from "@/lib/admin-client";
+import { adminPost, adminPatch, adminDel, revalidatePaths } from "@/lib/admin-client";
 import { blogPostSchema } from "@/lib/shared";
 
 interface Post {
@@ -45,6 +45,7 @@ function PostForm({ initial, onDone }: { initial?: Post; onDone: () => void }) {
     try {
       if (initial) await adminPatch(`/posts/${initial._id}`, parsed.data);
       else await adminPost("/posts", parsed.data);
+      await revalidatePaths(["/", "/blog", `/blog/${parsed.data.slug}`]);
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -90,6 +91,7 @@ export default function PostsPage() {
   const remove = async (p: Post) => {
     if (!confirm(`Delete "${p.title}"?`)) return;
     await adminDel(`/posts/${p._id}`);
+    await revalidatePaths(["/", "/blog", `/blog/${p.slug}`]);
     await reload();
   };
 
